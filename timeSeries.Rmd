@@ -1,0 +1,134 @@
+---
+title: "time Series"
+author: "Sagar"
+
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Time Series Analysis
+
+> A time series is an ordered sequence of of equally spaced values over time. It is denoted by: Y = a + bX
+
+* Components of a time series:
+  + Trend
+  + Seasonality
+  + Cyclic
+  + Random
+
+
+### The Autoregressive(AR) Model
+
+> The Autoregressive Model is denoted by: 
+y~t~ = δ + φ~1~y~t-1~ + φ~2~y~t-2~ + … + φ~p~y~t-1~ + At
+> A particular point in the series can be expressed as a linear combination of the prior p values.
+
+### The Moving Average(MA) Model
+
+> The Moving Average Model is denoted by:
+y(t)=\mu +\varepsilon _{t}+\theta _{1}\varepsilon _{{t-1}}+\cdots +\theta _{q}\varepsilon _{{t-q}}\,
+> In MA(q) model, the value of the time series is a linear combination of the error term or the residuals.
+
+### Autoregressive Moving Average(ARMA) Model
+
+> ARMA model is defined as a combination of the AR(p) and the MA(q) model. To apply a model to a time series, the series should be Stationary in nature.
+
+* Criteria for a Stationary Series:
+  + The mean is constant for the series
+  + The variance of the series is finite
+  + the covariance of the y~t~ and y~t+h~ depends only on the value of the lag
+  
+### **Steps in time series analysis**
+
+#### Get the data 
+
+```{r}
+#using WDI data 
+#install.packages("WDI")
+library("WDI")
+```
+
+Using the GDP per capita from 1960 to 2016
+
+```{r}
+gdp <-  WDI(country = c("US"), indicator = c("NY.GDP.PCAP.CD"), start = 1960, end = 2016)
+# looking at the data
+head(gdp)
+```
+
+Changing the column name for the third column
+
+```{r}
+names(gdp) <-  c("iso2c", "coutry", "GDPPerCapita", "year")
+head(gdp)
+```
+
+
+#### Organizing the data set in the ascending order:
+
+```{r}
+gdp <-  gdp[order(gdp$year), ]
+
+```
+
+#### Checking for stationary data assumption
+
+```{r}
+plot(gdp$GDPPerCapita~gdp$year)
+```
+
+Using ts function in R to transform the data to time series.
+
+```{r}
+tsgdp <-  ts(gdp$GDPPerCapita, start = min(gdp$year), end = max(gdp$year) )
+```
+
+Clearly there is a positive trend in the series.
+Since the data insn't stationary using differencing to transform the current series to a stationary series.
+
+> Using the forecast package for diffing
+
+```{r}
+#install.packages("forecast")
+library("forecast")
+```
+
+```{r}
+usGDP <-  auto.arima(tsgdp)
+usGDP
+```
+
+
+We have a ARIMA(2,2,2) model with parameters 2,2,2
+The first parameter is of the AR(q) model denoting, in order to analyze the gdp per capita of a year we need to consider the GDP of last two years.
+The second parameter denotes the level of differencing, i.e. 2.
+The third parameter is of MA(p) model that denotes, we need to consider the error term for the last two years.
+
+y~t~ = φ~1~y~t-1~ + φ~2~y~t-2~ + $\alpha$~1~$\varepsilon$~t-1~ + $\alpha$~2~$\varepsilon$~t-2~
+
+
+#### Calculating the coeeficients for the model
+
+```{r}
+coef(usGDP)
+```
+
+#### Predicting future values of the series for 10 years
+
+```{r}
+predictionResult = predict(usGDP, n.ahead=10, se.fit = T  )
+predictionResult
+```
+
+#### Forecasting & plotting the results
+
+```{r}
+GDPForecast <-  forecast(object = usGDP, h =10)
+plot(GDPForecast)
+```
+
+
+
+
